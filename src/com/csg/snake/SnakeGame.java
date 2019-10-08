@@ -74,7 +74,7 @@ public class SnakeGame extends Application {
 	
 	public void showMenuScreen() {
 		onePlayer = new Button("1 Player Game");
-		bg.setTop(onePlayer);
+		bg.setCenter(onePlayer);
 		onePlayer.setOnAction(e -> {
 			menuButtonClickPlayer.seek(Duration.ZERO);
 			menuButtonClickPlayer.play();

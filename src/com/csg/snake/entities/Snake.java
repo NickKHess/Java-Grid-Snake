@@ -182,12 +182,18 @@ public class Snake extends ImageView {
 		game.setFruit(null);
 		snake.clear();
 		game.getBG().getChildren().clear();
+		
+		BorderPane gameOverPane = new BorderPane();
+		
+		gameOverPane.setMaxSize(50, 50);
+		
 		Text text = new Text("GAME OVER\nScore: " + score);
 
 		text.setFill(Color.LIME);
 		text.setFont(new Font(SnakeGame.FONT_FAMILY, 16));
 		text.setTextAlignment(TextAlignment.CENTER);
-		game.getBG().setCenter(text);
+		
+		gameOverPane.setTop(text);
 		
 		Button restartButton = new Button("Restart");
 		restartButton.setOnAction(e -> {
@@ -207,7 +213,11 @@ public class Snake extends ImageView {
 			snakeDeathPlayer.stop();
 			snakeEatPlayer.stop();
 		});
-		game.getBG().setBottom(restartButton);
+		
+		gameOverPane.setBottom(restartButton);
+		
+		game.getBG().setCenter(gameOverPane);
+		
 		BorderPane.setAlignment(restartButton, Pos.TOP_CENTER);
 		score = 0;
 	}
