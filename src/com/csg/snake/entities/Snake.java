@@ -36,6 +36,7 @@ public class Snake extends ImageView {
 	
 	LinkedList<Rectangle> snake = new LinkedList<Rectangle>();
 	int score = 0;
+	int highScore = -1;
 	Vector2D currentPosition;
 	Timeline snakeAnimation, deathAnimation;
 
@@ -49,6 +50,7 @@ public class Snake extends ImageView {
 	DropShadow snakeGlow = new DropShadow(0, 0, 0, snakeColor);
 
 	public Snake(int x, int y, SnakeGame game) {
+		
 		this.game = game;
 		currentPosition = new Vector2D(x, y);
 		
@@ -67,7 +69,6 @@ public class Snake extends ImageView {
 		snakeGlow.setWidth(SnakeGame.GRID_RECT_SIZE + 5);
 		snakeGlow.setHeight(SnakeGame.GRID_RECT_SIZE + 5);
 		head.setEffect(snakeGlow);
-		
 		
 		snake.add(head);
 		game.getTheGrid().getChildren().addAll(head);
@@ -173,10 +174,10 @@ public class Snake extends ImageView {
 		deathAnimation.stop();
 		snakeDeathPlayer.seek(Duration.ZERO);
 		snakeDeathPlayer.play();
-		cleanUp();
+		showGameOver();
 	}
 
-	public void cleanUp() {
+	public void showGameOver() {
 		game.getTheGrid().getChildren().clear();
 		game.setFruit(null);
 		snake.clear();
