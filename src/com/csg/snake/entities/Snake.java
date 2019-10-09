@@ -12,6 +12,7 @@ import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.geometry.Pos;
 import javafx.scene.control.Button;
+import javafx.scene.effect.BlurType;
 import javafx.scene.effect.DropShadow;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.BorderPane;
@@ -38,7 +39,7 @@ public class Snake extends ImageView {
 	int score = 0;
 	int highScore = -1;
 	Vector2D currentPosition;
-	Timeline snakeAnimation, deathAnimation;
+	Timeline snakeTimeline, deathTimeline;
 
 	private Direction currentDirection;
 
@@ -46,7 +47,12 @@ public class Snake extends ImageView {
 
 	boolean selfCollision = false;
 
-	public static Color snakeColor;
+	public static Color snakeColor = new Color(Double.parseDouble(SnakeGame.config.get("snakeColorR")), 
+			Double.parseDouble(SnakeGame.config.get("snakeColorG")), 
+			Double.parseDouble(SnakeGame.config.get("snakeColorB")), 
+			Double.parseDouble(SnakeGame.config.get("snakeColorA")));
+	public static boolean rainbowSnake = Boolean.parseBoolean(SnakeGame.config.get("rainbowSnake"));
+	
 	DropShadow snakeGlow = new DropShadow(0, 0, 0, snakeColor);
 
 	public Snake(int x, int y, SnakeGame game) {
@@ -58,7 +64,6 @@ public class Snake extends ImageView {
 
 		Rectangle head = new Rectangle(SnakeGame.WINDOW_SIZE / SnakeGame.GRID_WIDTH, 
 				SnakeGame.WINDOW_SIZE / SnakeGame.GRID_WIDTH);
-		snakeColor = Color.LIMEGREEN;
 		GridPane.setRowIndex(head, 0);
 		GridPane.setColumnIndex(head, 0);
 		head.setFill(snakeColor);
@@ -68,32 +73,36 @@ public class Snake extends ImageView {
 		snakeGlow.setOffsetY(0);
 		snakeGlow.setWidth(SnakeGame.GRID_RECT_SIZE + 5);
 		snakeGlow.setHeight(SnakeGame.GRID_RECT_SIZE + 5);
+		snakeGlow.setBlurType(BlurType.GAUSSIAN);
 		head.setEffect(snakeGlow);
 		
 		snake.add(head);
 		game.getTheGrid().getChildren().addAll(head);
 
-		snakeAnimation = new Timeline(new KeyFrame(Duration.seconds(.1), new EventHandler<ActionEvent>() {
-			// Commented code here is for debugging only. Shows time between frames
-			//long lastTimeMS = 0;
+		snakeTimeline = new Timeline(new KeyFrame(Duration.seconds(.09), new EventHandler<ActionEvent>() {
+			double hue = 0;
 			@Override
 			public void handle(ActionEvent e) {
 				updateSnakePosition(getCurrentDirection());
-				/*if(lastTimeMS != 0)
-					System.out.println("Time btwn frames: " + (System.currentTimeMillis() - lastTimeMS));
-				lastTimeMS = System.currentTimeMillis();*/
+				snakeColor = Color.hsb(hue, 1, 1);
+				hue += 2;
+				
+				for(Rectangle part : snake) {
+					part.setFill(snakeColor);
+				}
+				snakeGlow.setColor(snakeColor);
 			}
 		}));
-		snakeAnimation.setCycleCount(Timeline.INDEFINITE);
-		snakeAnimation.play();
+		snakeTimeline.setCycleCount(Timeline.INDEFINITE);
+		snakeTimeline.play();
 	}
 
 
 	public void updateSnakePosition(Direction direction) {
 		Vector2D motion = new Vector2D(direction);
 
-		currentPosition = new Vector2D(currentPosition.getX() + motion.getX(), 
-				currentPosition.getY() + motion.getY());
+		currentPosition = new Vector2D(currentPosition.getX() + (motion.getX()), 
+				currentPosition.getY() + (motion.getY()));
 
 		Rectangle snakeTail = snake.remove(snake.size() - 1);
 
@@ -147,16 +156,14 @@ public class Snake extends ImageView {
 	}
 
 	public void killSnake() {
-		snakeAnimation.stop();
+		snakeTimeline.stop();
 		
 		// Death animation speeds up as your snake gets longer. The animation is the same length for
 		// every possible snake length.
 
 		float animationLength = .25f;
 
-		deathAnimation = new Timeline(new KeyFrame(Duration.seconds(animationLength/snake.size()), new EventHandler<ActionEvent>() {
-			@Override
-			public void handle(ActionEvent e) {
+		deathTimeline = new Timeline(new KeyFrame(Duration.seconds(animationLength/snake.size()), e -> {
 				game.getTheGrid().getChildren().remove(snake.get(0));
 				snake.remove(snake.get(0));
 				snakeCrumblePlayer.seek(Duration.ZERO);
@@ -164,14 +171,13 @@ public class Snake extends ImageView {
 				if(snake.isEmpty()) {
 					endDeathAnimation();
 				}
-			};
 		}));
-		deathAnimation.setCycleCount(Timeline.INDEFINITE);
-		deathAnimation.play();
+		deathTimeline.setCycleCount(Timeline.INDEFINITE);
+		deathTimeline.play();
 	}
 
 	public void endDeathAnimation() {
-		deathAnimation.stop();
+		deathTimeline.stop();
 		snakeDeathPlayer.seek(Duration.ZERO);
 		snakeDeathPlayer.play();
 		showGameOver();
@@ -189,7 +195,7 @@ public class Snake extends ImageView {
 		
 		Text text = new Text("GAME OVER\nScore: " + score);
 
-		text.setFill(Color.LIME);
+		text.setFill(Color.WHITE);
 		text.setFont(new Font(SnakeGame.FONT_FAMILY, 16));
 		text.setTextAlignment(TextAlignment.CENTER);
 		

@@ -4,11 +4,15 @@ import java.util.Random;
 
 import com.csg.snake.entities.Snake;
 import com.csg.snake.physics.Direction;
+import com.csg.snake.storage.Config;
 
 import javafx.application.Application;
 import javafx.event.EventHandler;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
+import javafx.scene.control.CheckBox;
+import javafx.scene.control.ColorPicker;
+import javafx.scene.control.Label;
 import javafx.scene.effect.DropShadow;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
@@ -20,7 +24,6 @@ import javafx.scene.media.Media;
 import javafx.scene.media.MediaPlayer;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
-import javafx.scene.shape.StrokeType;
 import javafx.scene.text.Font;
 import javafx.scene.text.Text;
 import javafx.stage.Stage;
@@ -44,15 +47,27 @@ public class SnakeGame extends Application {
 	public static final int WINDOW_SIZE = 750;
 	public static final int GRID_WIDTH = 32;
 	public static final int GRID_RECT_SIZE = WINDOW_SIZE / GRID_WIDTH;
-	
+
 	public static final String FONT_FAMILY = "TIMES";
-	
-	public Button onePlayer;
-	
+
+	public Button playButton;
+
 	boolean listenerActive = false;
-	
+
+	public static Config config = new Config();
+
 	@Override
 	public void start(Stage stage) throws Exception {
+		// If config is empty, populate it
+		if(config.isEmpty()) {
+			config.set("snakeColorR", Color.LIME.getRed());
+			config.set("snakeColorG", Color.LIME.getGreen());
+			config.set("snakeColorB", Color.LIME.getBlue());
+			config.set("snakeColorA", Color.LIME.getOpacity());
+			config.set("rainbowSnake", false);
+			config.set("highScore", 0);
+		}
+
 		this.stage = stage;
 
 		bg = new BorderPane();
@@ -71,22 +86,16 @@ public class SnakeGame extends Application {
 	public static void main(String[] args) {
 		launch(args);
 	}
-	
+
 	public void showMenuScreen() {
-		onePlayer = new Button("1 Player Game");
-		bg.setCenter(onePlayer);
-		onePlayer.setOnAction(e -> {
+		playButton = new Button("Play");
+
+		playButton.setOnAction(e -> {
 			menuButtonClickPlayer.seek(Duration.ZERO);
 			menuButtonClickPlayer.play();
-			
+
 			stats = new BorderPane();
 			stats.setMaxHeight(200);
-
-			Rectangle bounds = new Rectangle(0, 0, stats.getWidth(), stats.getHeight());
-			bounds.setFill(Color.BLACK);
-			bounds.setStrokeType(StrokeType.INSIDE);
-			bounds.setStrokeWidth(2);
-			bounds.setStroke(Color.LIME);
 
 			theGrid = new BorderPane();
 
@@ -96,29 +105,67 @@ public class SnakeGame extends Application {
 			snake = new Snake(0, 0, this);
 
 			scoreCounter = new Text("Score: " + snake.getScore());
-			scoreCounter.setFill(Color.LIME);
+			scoreCounter.setFill(Color.WHITE);
 			scoreCounter.setFont(new Font(FONT_FAMILY, WINDOW_SIZE / 50));
 
 			stats.setLeft(scoreCounter);
 
-			onePlayer.setVisible(false);
+			playButton.setVisible(false);
 
 			playGame();
 		});
+		bg.setCenter(playButton);
+
+		BorderPane options = new BorderPane();
+
+		Label snakeColorPickerLabel = new Label("Snake Color: ");
+		snakeColorPickerLabel.setTextFill(Color.WHITE);
+		
+		ColorPicker snakeColorPicker = new ColorPicker(Snake.snakeColor);
+		
+		snakeColorPicker.setOnAction(e -> {
+			Color chosenColor = snakeColorPicker.getValue();
+			Snake.snakeColor = chosenColor;
+			
+			config.set("snakeColorR", Snake.snakeColor.getRed());
+			config.set("snakeColorG", Snake.snakeColor.getGreen());
+			config.set("snakeColorB", Snake.snakeColor.getBlue());
+			config.set("snakeColorA", Snake.snakeColor.getOpacity());
+		});
+		
+		BorderPane snakeColorPickerMenu = new BorderPane();
+		snakeColorPickerMenu.setLeft(snakeColorPickerLabel);
+		snakeColorPickerMenu.setRight(snakeColorPicker);
+
+		options.setLeft(snakeColorPickerMenu);
+		
+		// Rainbow snake feature toggle
+		// Will disable snake color upon enabling
+		CheckBox rainbowSnakeToggle = new CheckBox("Rainbow Snake");
+		rainbowSnakeToggle.setIndeterminate(Boolean.parseBoolean(config.get("rainbowSnake")));
+		rainbowSnakeToggle.setTextFill(Color.WHITE);
+		
+		rainbowSnakeToggle.setOnAction(e -> {
+			Snake.rainbowSnake = rainbowSnakeToggle.isSelected();
+			config.set("rainbowSnake", Snake.rainbowSnake);
+		});
+		
+		options.setRight(rainbowSnakeToggle);
+		bg.setBottom(options);
 	}
 
 	public void playGame() {
 		fruit = addNewFruit();
 
 		listenerActive = true;
-		
-		EventHandler<KeyEvent> eh = new EventHandler<javafx.scene.input.KeyEvent>() {
+
+		EventHandler<KeyEvent> keyEventHandler = new EventHandler<javafx.scene.input.KeyEvent>() {
 			@Override
 			public void handle(KeyEvent key) {
 				// Remove the event handler if there's no need for it, as determined in Snake.java cleanUp()
 				if(!listenerActive)
 					stage.removeEventHandler(KeyEvent.KEY_PRESSED, this);
-					
+
 				// Each if statement verifies that the proper key has been pressed and ensures the player cannot
 				// double back on himself
 
@@ -141,26 +188,25 @@ public class SnakeGame extends Application {
 				}
 			}
 		};
-		
-		// Control scheme -
-		//    Player 1: WASD
-		stage.addEventHandler(KeyEvent.KEY_PRESSED, eh);
+
+		// Control scheme - WASD
+		stage.addEventHandler(KeyEvent.KEY_PRESSED, keyEventHandler);
 	}
 
 	public Rectangle addNewFruit() {
 		if(fruit == null) {
 			fruit = new Rectangle(GRID_RECT_SIZE, GRID_RECT_SIZE);
 			fruit.setFill(Color.RED);
-			
+
 			DropShadow fruitGlow = new DropShadow();
 			fruitGlow.setColor(Color.RED);
 			fruitGlow.setOffsetX(0);
 			fruitGlow.setOffsetY(0);
 			fruitGlow.setWidth(GRID_RECT_SIZE + 5);
 			fruitGlow.setHeight(GRID_RECT_SIZE + 5);
-			
+
 			fruit.setEffect(fruitGlow);
-			
+
 			theGrid.getChildren().add(fruit);
 		}
 
@@ -188,7 +234,7 @@ public class SnakeGame extends Application {
 		return theGrid;
 	}
 
-	public Snake getPlayer1Snake() {
+	public Snake getSnake() {
 		return snake;
 	}
 

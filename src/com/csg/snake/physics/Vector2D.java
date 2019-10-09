@@ -6,9 +6,9 @@ package com.csg.snake.physics;
  */
 public class Vector2D {
 
-	private int x, y;
+	private float x, y;
 
-	public Vector2D(int x, int y) {
+	public Vector2D(float x, float y) {
 		this.x = x;
 		this.y = y;
 	}
@@ -34,11 +34,11 @@ public class Vector2D {
 		}
 	}
 
-	public int getX() {
+	public float getX() {
 		return x;
 	}
 
-	public int getY() {
+	public float getY() {
 		return y;
 	}
 
