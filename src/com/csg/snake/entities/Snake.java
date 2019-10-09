@@ -28,16 +28,14 @@ import javafx.util.Duration;
 
 public class Snake extends ImageView {
 
-	Media snakeEat = new Media(new File("smw_fireball.wav").toURI().toString());
+	Media snakeEat = new Media(new File("audio/smw_fireball.wav").toURI().toString());
 	MediaPlayer snakeEatPlayer = new MediaPlayer(snakeEat);
-	Media snakeDie = new Media(new File("smw_game_over.wav").toURI().toString());
+	Media snakeDie = new Media(new File("audio/smw_game_over.wav").toURI().toString());
 	MediaPlayer snakeDeathPlayer = new MediaPlayer(snakeDie);
-	Media snakeCrumble = new Media(new File("smw_lava_bubble.wav").toURI().toString());
+	Media snakeCrumble = new Media(new File("audio/smw_lava_bubble.wav").toURI().toString());
 	MediaPlayer snakeCrumblePlayer = new MediaPlayer(snakeCrumble);
 	
 	LinkedList<Rectangle> snake = new LinkedList<Rectangle>();
-	int score = 0;
-	int highScore = -1;
 	Vector2D currentPosition;
 	Timeline snakeTimeline, deathTimeline;
 
@@ -47,11 +45,11 @@ public class Snake extends ImageView {
 
 	boolean selfCollision = false;
 
-	public static Color snakeColor = new Color(Double.parseDouble(SnakeGame.config.get("snakeColorR")), 
-			Double.parseDouble(SnakeGame.config.get("snakeColorG")), 
-			Double.parseDouble(SnakeGame.config.get("snakeColorB")), 
-			Double.parseDouble(SnakeGame.config.get("snakeColorA")));
-	public static boolean rainbowSnake = Boolean.parseBoolean(SnakeGame.config.get("rainbowSnake"));
+	public static Color snakeColor = new Color(Double.parseDouble(SnakeGame.getConfig().get("snakeColorR")), 
+			Double.parseDouble(SnakeGame.getConfig().get("snakeColorG")), 
+			Double.parseDouble(SnakeGame.getConfig().get("snakeColorB")), 
+			Double.parseDouble(SnakeGame.getConfig().get("snakeColorA")));
+	public static boolean rainbowSnake = Boolean.parseBoolean(SnakeGame.getConfig().get("rainbowSnake"));
 	
 	DropShadow snakeGlow = new DropShadow(0, 0, 0, snakeColor);
 
@@ -62,11 +60,13 @@ public class Snake extends ImageView {
 		
 		setCurrentDirection(Direction.RIGHT);
 
-		Rectangle head = new Rectangle(SnakeGame.WINDOW_SIZE / SnakeGame.GRID_WIDTH, 
-				SnakeGame.WINDOW_SIZE / SnakeGame.GRID_WIDTH);
+		Rectangle head = new Rectangle(SnakeGame.GRID_RECT_SIZE, 
+				SnakeGame.GRID_RECT_SIZE);
 		GridPane.setRowIndex(head, 0);
 		GridPane.setColumnIndex(head, 0);
 		head.setFill(snakeColor);
+		
+		// Configure and add glow (drop shadow) effect
 		snakeGlow.setColor(snakeColor);
 		snakeGlow.setRadius(10);
 		snakeGlow.setOffsetX(0);
@@ -106,8 +106,8 @@ public class Snake extends ImageView {
 
 		Rectangle snakeTail = snake.remove(snake.size() - 1);
 
-		snakeTail.setX((SnakeGame.WINDOW_SIZE / SnakeGame.GRID_WIDTH) * currentPosition.getX());
-		snakeTail.setY((SnakeGame.WINDOW_SIZE / SnakeGame.GRID_WIDTH) * currentPosition.getY());
+		snakeTail.setX((SnakeGame.GRID_RECT_SIZE) * currentPosition.getX());
+		snakeTail.setY((SnakeGame.GRID_RECT_SIZE) * currentPosition.getY());
 
 		snake.add(0, snakeTail);
 
@@ -132,9 +132,9 @@ public class Snake extends ImageView {
 				) {
 			killSnake();
 		}
-		else if(score > snake.size() - 1) {
-				Rectangle newPiece = new Rectangle(SnakeGame.WINDOW_SIZE / SnakeGame.GRID_WIDTH,
-						SnakeGame.WINDOW_SIZE / SnakeGame.GRID_WIDTH);
+		// Add a new piece of the size of the snake (-1) is less than the score
+		else if(game.getScore() > snake.size() - 1) {
+				Rectangle newPiece = new Rectangle(SnakeGame.GRID_RECT_SIZE, SnakeGame.GRID_RECT_SIZE);
 				newPiece.setFill(snakeColor);
 				newPiece.setEffect(snakeGlow);
 				newPiece.setX((SnakeGame.GRID_RECT_SIZE) * currentPosition.getX() - motion.getX() * (SnakeGame.GRID_RECT_SIZE)); 
@@ -145,9 +145,9 @@ public class Snake extends ImageView {
 
 		if(currentPosition.getX() * (SnakeGame.GRID_RECT_SIZE) == game.getFruit().getX() &&
 				currentPosition.getY() * (SnakeGame.GRID_RECT_SIZE) == game.getFruit().getY()) {
-			score++;
+			game.setScore(game.getScore() + 1);
 			game.setFruit(game.addNewFruit());
-			game.getScoreCounter1().setText("Score: " + score);
+			game.getScoreCounter().setText("Score: " + game.getScore());
 
 			snakeEatPlayer.seek(Duration.ZERO);
 			snakeEatPlayer.play();
@@ -184,16 +184,24 @@ public class Snake extends ImageView {
 	}
 
 	public void showGameOver() {
+		// Clean up
 		game.getTheGrid().getChildren().clear();
 		game.setFruit(null);
 		snake.clear();
 		game.getBG().getChildren().clear();
 		
-		BorderPane gameOverPane = new BorderPane();
+		// Update high score
+		if(game.getScore() > game.getHighScore()) {
+			game.setHighScore(game.getScore());
+			SnakeGame.getConfig().set("highScore", game.getHighScore());
+		}
 		
+		// Show game over screen
+		
+		BorderPane gameOverPane = new BorderPane();
 		gameOverPane.setMaxSize(50, 50);
 		
-		Text text = new Text("GAME OVER\nScore: " + score);
+		Text text = new Text("GAME OVER\nScore: " + game.getScore() + "\nHigh Score: " + game.getHighScore());
 
 		text.setFill(Color.WHITE);
 		text.setFont(new Font(SnakeGame.FONT_FAMILY, 16));
@@ -203,8 +211,8 @@ public class Snake extends ImageView {
 		
 		Button restartButton = new Button("Restart");
 		restartButton.setOnAction(e -> {
-			game.menuButtonClickPlayer.seek(Duration.ZERO);
-			game.menuButtonClickPlayer.play();
+			game.getMenuButtonClickPlayer().seek(Duration.ZERO);
+			game.getMenuButtonClickPlayer().play();
 			
 			// Enable main screen
 			game.showMenuScreen();
@@ -225,17 +233,12 @@ public class Snake extends ImageView {
 		game.getBG().setCenter(gameOverPane);
 		
 		BorderPane.setAlignment(restartButton, Pos.TOP_CENTER);
-		score = 0;
-	}
-
-	public int getScore() {
-		return score;
+		game.setScore(0);
 	}
 
 	public Direction getCurrentDirection() {
 		return currentDirection;
 	}
-
 
 	public void setCurrentDirection(Direction currentDirection) {
 		this.currentDirection = currentDirection;

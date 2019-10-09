@@ -12,7 +12,6 @@ import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.ColorPicker;
-import javafx.scene.control.Label;
 import javafx.scene.effect.DropShadow;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
@@ -31,30 +30,33 @@ import javafx.util.Duration;
 
 public class SnakeGame extends Application {
 
-	Stage stage;
-	Pane theGrid;
+	private Stage stage;
+	private Pane theGrid;
 	private BorderPane bg;
-	BorderPane stats;
-	Text scoreCounter;
+	private BorderPane stats;
+	private Text scoreDisplay, highScoreDisplay;
+
+	private int score = 0;
+	private int highScore = Integer.parseInt(SnakeGame.config.get("highScore"));
 
 	private Rectangle fruit;
 
-	Snake snake;
+	private Snake snake;
 
-	Media menuButtonClick = new Media(new File("smw_map_move_to_spot.wav").toURI().toString());
-	public MediaPlayer menuButtonClickPlayer = new MediaPlayer(menuButtonClick);
+	private Media menuButtonClick = new Media(new File("audio/smw_map_move_to_spot.wav").toURI().toString());
+	private MediaPlayer menuButtonClickPlayer = new MediaPlayer(menuButtonClick);
+
+	public static final String FONT_FAMILY = "TIMES";
 
 	public static final int WINDOW_SIZE = 750;
 	public static final int GRID_WIDTH = 32;
 	public static final int GRID_RECT_SIZE = WINDOW_SIZE / GRID_WIDTH;
 
-	public static final String FONT_FAMILY = "TIMES";
+	private Button playButton;
 
-	public Button playButton;
+	private boolean listenerActive = false;
 
-	boolean listenerActive = false;
-
-	public static Config config = new Config();
+	private static Config config = new Config();
 
 	@Override
 	public void start(Stage stage) throws Exception {
@@ -79,7 +81,7 @@ public class SnakeGame extends Application {
 
 		stage.setScene(scene);
 		stage.setResizable(false);
-		stage.setTitle("Nick's Snake Game");
+		stage.setTitle("Java Grid Snake");
 		stage.show();
 	}
 
@@ -104,11 +106,16 @@ public class SnakeGame extends Application {
 
 			snake = new Snake(0, 0, this);
 
-			scoreCounter = new Text("Score: " + snake.getScore());
-			scoreCounter.setFill(Color.WHITE);
-			scoreCounter.setFont(new Font(FONT_FAMILY, WINDOW_SIZE / 50));
+			scoreDisplay = new Text("Score: " + score);
+			scoreDisplay.setFill(Color.WHITE);
+			scoreDisplay.setFont(new Font(FONT_FAMILY, WINDOW_SIZE / 50));
+			
+			highScoreDisplay = new Text("High Score: " + highScore);
+			highScoreDisplay.setFill(Color.WHITE);
+			highScoreDisplay.setFont(new Font(FONT_FAMILY, WINDOW_SIZE / 50));
 
-			stats.setLeft(scoreCounter);
+			stats.setLeft(scoreDisplay);
+			stats.setRight(highScoreDisplay);
 
 			playButton.setVisible(false);
 
@@ -118,8 +125,8 @@ public class SnakeGame extends Application {
 
 		BorderPane options = new BorderPane();
 
-		Label snakeColorPickerLabel = new Label("Snake Color: ");
-		snakeColorPickerLabel.setTextFill(Color.WHITE);
+		Text snakeColorPickerText = new Text("Snake Color: ");
+		snakeColorPickerText.setFill(Color.WHITE);
 		
 		ColorPicker snakeColorPicker = new ColorPicker(Snake.snakeColor);
 		
@@ -134,7 +141,7 @@ public class SnakeGame extends Application {
 		});
 		
 		BorderPane snakeColorPickerMenu = new BorderPane();
-		snakeColorPickerMenu.setLeft(snakeColorPickerLabel);
+		snakeColorPickerMenu.setLeft(snakeColorPickerText);
 		snakeColorPickerMenu.setRight(snakeColorPicker);
 
 		options.setLeft(snakeColorPickerMenu);
@@ -246,8 +253,8 @@ public class SnakeGame extends Application {
 		this.fruit = fruit;
 	}
 
-	public Text getScoreCounter1() {
-		return scoreCounter;
+	public Text getScoreCounter() {
+		return scoreDisplay;
 	}
 
 	public BorderPane getBG() {
@@ -264,6 +271,30 @@ public class SnakeGame extends Application {
 
 	public void setListenerActive(boolean listenerActive) {
 		this.listenerActive = listenerActive;
+	}
+
+	public int getScore() {
+		return score;
+	}
+
+	public void setScore(int score) {
+		this.score = score;
+	}
+
+	public int getHighScore() {
+		return highScore;
+	}
+	
+	public void setHighScore(int highScore) {
+		this.highScore = highScore;
+	}
+
+	public static Config getConfig() {
+		return config;
+	}
+
+	public MediaPlayer getMenuButtonClickPlayer() {
+		return menuButtonClickPlayer;
 	}
 
 }
